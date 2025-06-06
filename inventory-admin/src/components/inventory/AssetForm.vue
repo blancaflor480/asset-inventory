@@ -288,7 +288,6 @@ const resetForm = () => {
           <input 
             v-model="assetForm.assignee" 
             type="text" 
-            :disabled="isFieldDisabled('assignee')"
             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             :class="{ 'bg-gray-100': isFieldDisabled('assignee') }"
           />
@@ -342,7 +341,8 @@ const resetForm = () => {
 
          <div>
           <label class="block text-sm font-medium text-gray-700">Tag ID</label>
-          <input v-model="assetForm.tag_id" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+          <input v-model="assetForm.tag_id" :disabled="isFieldDisabled('tag_id')"
+            type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
         </div>
 
         <div>
