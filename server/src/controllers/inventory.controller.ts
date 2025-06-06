@@ -338,3 +338,37 @@ export const deleteInventoryItem = async (req: AuthRequest, res: Response): Prom
     res.status(500).json({ message: 'Failed to delete inventory item' });
   }
 };
+
+export const validateModelNo = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { modelNo } = req.params;
+    const conn = await connection;
+    
+    const [rows] = await conn.execute(
+      'SELECT id FROM inventory_items WHERE model_no = ?',
+      [modelNo]
+    ) as [any[], any];
+
+    res.json({ exists: rows.length > 0 });
+  } catch (error) {
+    console.error('Error validating model number:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const validateSerialNo = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { serialNo } = req.params;
+    const conn = await connection;
+    
+    const [rows] = await conn.execute(
+      'SELECT id FROM inventory_items WHERE serial_no = ?',
+      [serialNo]
+    ) as [any[], any];
+
+    res.json({ exists: rows.length > 0 });
+  } catch (error) {
+    console.error('Error validating serial number:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
