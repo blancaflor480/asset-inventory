@@ -30,6 +30,7 @@ import { useRoute } from 'vue-router';
 const route = useRoute();
 const menuItems = [
   { name: 'Dashboard', path: '/dashboard', icon: 'dashboard' },
-  { name: 'Inventory', path: '/inventory', icon: 'inventory_2' }
+  { name: 'Inventory', path: '/inventory', icon: 'inventory_2' },
+  { name: 'Accounts', path: '/accounts', icon: 'people' }
 ]
 </script>

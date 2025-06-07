@@ -1,14 +1,16 @@
 import axios from 'axios'
 import type { Asset } from '@/types/asset'
+import type { Account } from '@/types/account'
 
-const api = axios.create({
-  baseURL: 'http://localhost:3000/api', // adjust this to match your backend URL
+// Export the api instance
+export const api = axios.create({
+  baseURL: 'http://localhost:3000/api',
   headers: {
     'Content-Type': 'application/json'
   }
 })
 
-// Add request interceptor for auth token
+// Add auth token interceptor
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('token')
   if (token) {
@@ -28,6 +30,29 @@ api.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+// Create account API methods
+export const accountApi = {
+  getAll: async (params: { page: number; limit: number; roleFilter: string; sortOrder: 'ASC' | 'DESC' }) => {
+    const response = await api.get('/accounts', { params })
+    return response.data
+  },
+  
+  create: async (data: Partial<Account>) => {
+    const response = await api.post('/accounts', data)
+    return response.data
+  },
+
+  update: async (id: string, data: Partial<Account>) => {
+    const response = await api.put(`/accounts/${id}`, data)
+    return response.data
+  },
+
+  delete: async (id: string) => {
+    const response = await api.delete(`/accounts/${id}`)
+    return response.data
+  }
+}
 
 export const assetApi = {
   getAll: async (params: { page: number; limit: number; search: string }) => {

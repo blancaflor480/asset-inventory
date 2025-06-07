@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteInventoryItem = exports.updateInventoryItem = exports.createInventoryItem = exports.getInventoryItems = void 0;
+exports.validateSerialNo = exports.validateModelNo = exports.deleteInventoryItem = exports.updateInventoryItem = exports.createInventoryItem = exports.getInventoryItems = void 0;
 const database_1 = require("../config/database");
 const getInventoryItems = async (req, res) => {
     try {
@@ -153,7 +153,16 @@ exports.createInventoryItem = createInventoryItem;
 const updateInventoryItem = async (req, res) => {
     try {
         const { id } = req.params;
+        if (!id) {
+            res.status(400).json({ message: 'ID is required for updates' });
+            return;
+        }
         const conn = await database_1.connection;
+        const [existing] = await conn.execute('SELECT id FROM inventory_items WHERE id = ?', [id]);
+        if (!existing.length) {
+            res.status(404).json({ message: 'Asset not found' });
+            return;
+        }
         const { sn_description, category, dept_area, office, designation, assignee, email_address, password, mobile_number, date_issued, supplier, warranty_expiration, status, condition_status, unit_value, qty, total_value, model_no, serial_no, remarks, chain_of_ownership, previous_owner, remarks_date } = req.body;
         const parsedUnitValue = typeof unit_value === 'string' ?
             parseFloat(unit_value.replace(/[₱,]/g, '')) :
@@ -196,9 +205,10 @@ const updateInventoryItem = async (req, res) => {
         total_value = ?, model_no = ?, serial_no = ?, remarks = ?,
         chain_of_ownership = ?, previous_owner = ?, remarks_date = ?
       WHERE id = ?`, values);
+        const [updated] = await conn.execute('SELECT * FROM inventory_items WHERE id = ?', [id]);
         res.json({
             message: 'Inventory item updated successfully',
-            item: { id, ...req.body }
+            item: updated[0]
         });
     }
     catch (error) {
@@ -220,4 +230,30 @@ const deleteInventoryItem = async (req, res) => {
     }
 };
 exports.deleteInventoryItem = deleteInventoryItem;
+const validateModelNo = async (req, res) => {
+    try {
+        const { modelNo } = req.params;
+        const conn = await database_1.connection;
+        const [rows] = await conn.execute('SELECT id FROM inventory_items WHERE model_no = ?', [modelNo]);
+        res.json({ exists: rows.length > 0 });
+    }
+    catch (error) {
+        console.error('Error validating model number:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+exports.validateModelNo = validateModelNo;
+const validateSerialNo = async (req, res) => {
+    try {
+        const { serialNo } = req.params;
+        const conn = await database_1.connection;
+        const [rows] = await conn.execute('SELECT id FROM inventory_items WHERE serial_no = ?', [serialNo]);
+        res.json({ exists: rows.length > 0 });
+    }
+    catch (error) {
+        console.error('Error validating serial number:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+exports.validateSerialNo = validateSerialNo;
 //# sourceMappingURL=inventory.controller.js.map
