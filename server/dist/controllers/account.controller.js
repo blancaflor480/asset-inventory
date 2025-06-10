@@ -93,6 +93,11 @@ const updateAccount = async (req, res) => {
             params.push(username);
         }
         if (email) {
+            const [emailCheck] = await conn.execute('SELECT id FROM admin_users WHERE email = ? AND id != ?', [email, id]);
+            if (emailCheck.length > 0) {
+                res.status(409).json({ message: 'Email already exists' });
+                return;
+            }
             updates.push('email = ?');
             params.push(email);
         }
@@ -115,12 +120,21 @@ const updateAccount = async (req, res) => {
             return;
         }
         params.push(id);
-        await conn.execute(`UPDATE admin_users SET ${updates.join(', ')} WHERE id = ?`, params);
-        res.json({ message: 'Account updated successfully' });
+        const updateQuery = `
+      UPDATE admin_users 
+      SET ${updates.join(', ')} 
+      WHERE id = ?
+    `;
+        await conn.execute(updateQuery, params);
+        const [updated] = await conn.execute('SELECT id, username, email, role, status, last_login, created_at, updated_at FROM admin_users WHERE id = ?', [id]);
+        res.json({
+            message: 'Account updated successfully',
+            account: updated[0]
+        });
     }
     catch (error) {
         console.error('Error updating account:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Failed to update account' });
     }
 };
 exports.updateAccount = updateAccount;
