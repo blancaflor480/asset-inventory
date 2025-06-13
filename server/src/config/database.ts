@@ -4,10 +4,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const dbConfig = {
-  host: process.env.DB_HOST || 'linen-snake-138010.hostingersite.com',
-  user: process.env.DB_USER || 'u408414471_admin',
-  password: process.env.DB_PASSWORD || 'Hakdog007@',
-  database: process.env.DB_NAME || 'u408414471_inventory',
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'inventory_system',
 };
 
 export const connection = mysql.createConnection(dbConfig);
