@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { useUserStore } from '@/stores/user'
 import { useAccountStore } from '@/stores/account';
 import { accountApi } from '@/services/accountApi';
 import type { Account } from '@/types/account';
 
+const router = useRouter();
+const userStore = useUserStore()
 const store = useAccountStore();
 const showForm = ref(false);
 const showEditModal = ref(false);
@@ -16,7 +20,16 @@ const newAccount = ref<Partial<Account> & { password?: string }>({
   status: 'Active'
 });
 
-const roles = ['Admin', 'Manager', 'User'];
+onMounted(() => {
+  if (userStore.user?.role !== 'Superadmin') { 
+    router.push('/inventory');
+    return;
+  }
+  
+  store.fetchAccounts();
+});
+  
+const roles = ['Admin', 'Manager', 'User', 'Superadmin'];
 
 const columns = [
   { key: 'username', label: 'Username' },

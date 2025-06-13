@@ -6,9 +6,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import Layout from '@/components/layout/Layout.vue'
+import { useUserStore } from '@/stores/user'
+
+const userStore = useUserStore()
+onMounted(() => {
+  userStore.loadUserFromStorage()
+})
 
 const route = useRoute()
 const isLoginPage = computed(() => route.path === '/')

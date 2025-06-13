@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import type { PropType } from 'vue'
 import type { Asset } from '@/types/asset'
-import { assetApi } from '@/services/api' // Add this import
+import { assetApi } from '@/services/api'
 
 const emit = defineEmits(['save', 'cancel'])
 
@@ -15,32 +15,34 @@ const props = defineProps({
     type: String as PropType<'create' | 'edit'>,
     default: 'create'
   },
-  // Add editable fields prop
   editableFields: {
     type: Array as PropType<string[]>,
     default: () => []
   }
 })
 
-// Add computed property for field disabled state
+const errorMessage = ref<string | null>(null)
+const isSubmitting = ref(false)
+
 const isFieldDisabled = (fieldName: string) => {
   return props.mode === 'edit' && !props.editableFields.includes(fieldName)
 }
 
 const validateForm = () => {
   const requiredFields = [
-    { field: 'sn_description', label: 'Description' },
-    { field: 'category', label: 'Category' },
-    { field: 'dept_area', label: 'Department' },
-    { field: 'office', label: 'Office' },
     { field: 'assignee', label: 'Assignee' },
     { field: 'email_address', label: 'Email' },
-    { field: 'mobile_number', label: 'Mobile Number' }
+    { field: 'mobile_number', label: 'Mobile Number' },
+    { field: 'dept_area', label: 'Department' },
+    { field: 'office', label: 'Office' },
+    { field: 'sn_description', label: 'Device Description' },
+    { field: 'category', label: 'Category' },
+    { field: 'serial_no', label: 'Serial Number' }
   ]
 
   for (const { field, label } of requiredFields) {
     if (!assetForm.value[field as keyof Asset]) {
-      alert(`${label} is required`)
+      errorMessage.value = `${label} is required`
       return false
     }
   }
@@ -74,7 +76,6 @@ const assetForm = ref<Partial<Asset>>({
   remarks: ''
 })
 
-// Initialize form with props if editing
 onMounted(() => {
   if (props.asset) {
     Object.assign(assetForm.value, props.asset)
@@ -132,14 +133,13 @@ const chain_of_ownership = [
   'Fourth',
   'Transferred'
 ]
-const isSubmitting = ref(false)
 
-// Separate function for creating new asset
 const handleCreate = async () => {
   if (isSubmitting.value) return
   
   try {
     isSubmitting.value = true
+    errorMessage.value = null
 
     if (!validateForm()) {
       return
@@ -171,7 +171,12 @@ const handleCreate = async () => {
     })
 
     if (!response.ok) {
-      throw new Error(`Creation failed with status: ${response.status}`)
+      const errorData = await response.json()
+      if (response.status === 409 && errorData.message?.toLowerCase().includes('serial number')) {
+        errorMessage.value = 'This serial number already exists in the system. Please use a different serial number.'
+        return
+      }
+      throw new Error(errorData.message || `Creation failed with status: ${response.status}`)
     }
 
     const result = await response.json()
@@ -181,18 +186,18 @@ const handleCreate = async () => {
 
   } catch (error) {
     console.error('Form creation error:', error)
-    alert('Error creating asset: ' + (error instanceof Error ? error.message : String(error)))
+    errorMessage.value = 'The serial number already exists in the system.' 
   } finally {
     isSubmitting.value = false
   }
 }
 
-// Separate function for updating existing asset
 const handleUpdate = async () => {
   if (isSubmitting.value) return
   
   try {
     isSubmitting.value = true
+    errorMessage.value = null
 
     if (!validateForm()) {
       return
@@ -228,7 +233,12 @@ const handleUpdate = async () => {
     })
 
     if (!response.ok) {
-      throw new Error(`Update failed with status: ${response.status}`)
+      const errorData = await response.json()
+      if (response.status === 409 && errorData.message?.toLowerCase().includes('serial number')) {
+        errorMessage.value = 'Error: This serial number already exists in the system. Please use a different serial number.'
+        return
+      }
+      throw new Error(errorData.message || `Update failed with status: ${response.status}`)
     }
 
     const result = await response.json()
@@ -237,7 +247,7 @@ const handleUpdate = async () => {
 
   } catch (error) {
     console.error('Form update error:', error)
-    alert('Error updating asset: ' + (error instanceof Error ? error.message : String(error)))
+    errorMessage.value = 'The serial number already exists in the system.'
   } finally {
     isSubmitting.value = false
   }
@@ -287,25 +297,26 @@ const resetForm = () => {
           <label class="block text-sm font-medium text-gray-700">Full Name/Assignee</label>
           <input 
             v-model="assetForm.assignee" 
-            type="text" 
+            type="text"
+            required 
             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             :class="{ 'bg-gray-100': isFieldDisabled('assignee') }"
           />
         </div>
         <div>   
           <label class="block text-sm font-medium text-gray-700">Email</label>
-          <input v-model="assetForm.email_address" type="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+          <input v-model="assetForm.email_address" required type="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
         </div>
 
         <div>
           <label class="block text-sm font-medium text-gray-700">Mobile Number</label>
-          <input v-model="assetForm.mobile_number" type="tel" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+          <input v-model="assetForm.mobile_number" required type="tel" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
         </div>
 
         
         <div>
           <label class="block text-sm font-medium text-gray-700">Department</label>
-        <select v-model="assetForm.dept_area" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+        <select v-model="assetForm.dept_area" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
             <option value="" disabled>Select Here</option>
             <option v-for="dept_area in departments" :key="dept_area" :value="dept_area">{{ dept_area }} 
             </option>
@@ -315,7 +326,7 @@ const resetForm = () => {
 
         <div>
           <label class="block text-sm font-medium text-gray-700">Office</label>
-        <select v-model="assetForm.office" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+        <select v-model="assetForm.office" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
             <option value="" disabled>Select Here</option>
             <option v-for="office in office" :key="office" :value="office">{{ office }} 
             </option>
@@ -327,8 +338,6 @@ const resetForm = () => {
           <label class="block text-sm font-medium text-gray-700">Designation</label>
           <input v-model="assetForm.designation" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
         </div>
-
-       
       </div>
 
       <!-- Location Information -->
@@ -336,7 +345,7 @@ const resetForm = () => {
          <h3 class="text-lg font-medium text-gray-900 mb-6">DEVICE INFORMATION</h3>
        <div>
           <label class="block text-sm font-medium text-gray-700">Description/Name of Device</label>
-          <input v-model="assetForm.sn_description" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+          <input v-model="assetForm.sn_description" required type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
         </div>
 
          <div>
@@ -347,7 +356,7 @@ const resetForm = () => {
 
         <div>
           <label class="block text-sm font-medium text-gray-700">Category</label>
-          <select v-model="assetForm.category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+          <select v-model="assetForm.category" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
             <option value="" disabled>--Select Here Device--</option>
             <option v-for="category in categories" :key="category" :value="category">{{ category }}</option>
         </select>
@@ -412,10 +421,13 @@ const resetForm = () => {
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Serial No.</label>
-          <input v-model="assetForm.serial_no" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+          <input
+            v-model="assetForm.serial_no"
+            type="text"
+            required
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          />
         </div>
-
-        
       </div>
      
       <!-- Assignment Information -->
@@ -455,6 +467,11 @@ const resetForm = () => {
         <textarea v-model="assetForm.remarks" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
        
     </div>
+
+      <!-- Error message display -->
+      <div v-if="errorMessage" class="col-span-2 p-4 bg-red-50 text-red-700 rounded-md">
+        {{ errorMessage }}
+      </div>
 
       <!-- Form Actions -->
       <div class="col-span-2 flex justify-end space-x-3 mt-6">

@@ -2,9 +2,13 @@
 import { ref, onMounted, computed } from 'vue';
 import { useInventoryStore } from '@/stores/inventory';
 import { useAccountStore } from '@/stores/account';
-// Add Chart.js
 import { Chart as ChartJS, ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Pie, Bar } from 'vue-chartjs';
+import { useRouter } from 'vue-router';
+import { useUserStore } from '@/stores/user';
+
+const router = useRouter();
+const userStore = useUserStore();
 
 ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -81,6 +85,11 @@ const handleUpdateAccount = async (data: any) => {
 };
 
 onMounted(async () => {
+  if (userStore.user?.role !== 'Superadmin') {
+    router.push('/inventory');
+    return;
+  }
+
   await Promise.all([
     inventoryStore.fetchItems(),
     accountStore.fetchAccounts()

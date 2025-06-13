@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const email = ref('')
 const password = ref('')
 const error = ref('')
+
+const userStore = useUserStore()
 
 const handleLogin = async () => {
   try {
@@ -19,12 +22,12 @@ const handleLogin = async () => {
         password: password.value
       })
     })
-
+    
     const data = await response.json()
     
     if (response.ok) {
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('user', JSON.stringify(data.user))
+      userStore.setUser(data.user)
+      userStore.setToken(data.token)
       router.push('/dashboard')
     } else {
       error.value = data.message || 'Invalid credentials'
@@ -37,9 +40,13 @@ const handleLogin = async () => {
 }
 </script>
 
+
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gradient-to-r from-indigo-500 to-blue-600">
     <div class="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-2xl">
+      <div v-if="error" class="text-red-500 text-center text-sm bg-red-50 p-2 rounded">
+        {{ error }}
+      </div>
       <div>
         <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Asset Inventory System
@@ -83,9 +90,7 @@ const handleLogin = async () => {
           </button>
         </div>
         
-        <div v-if="error" class="text-red-500 text-center text-sm bg-red-50 p-2 rounded">
-          {{ error }}
-        </div>
+
       </form>
     </div>
   </div>

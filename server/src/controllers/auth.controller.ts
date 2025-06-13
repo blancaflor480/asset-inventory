@@ -8,6 +8,7 @@ interface AdminUser {
   email: string;
   password: string;
   username: string;
+  role: string;
 }
 
 export const login = async (req: Request, res: Response): Promise<void> => {
@@ -53,7 +54,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       user: {
         id: user.id,
         email: user.email,
-        username: user.username
+        username: user.username,
+        role: user.role,
       }
     });
   } catch (error) {
