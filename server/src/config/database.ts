@@ -14,11 +14,3 @@ const dbConfig = {
 };
 
 export const connection = mysql.createConnection(dbConfig);
-
-// package.json scripts
-{
-  "scripts": {
-    "build": "tsc",
-    "start": "node dist/server.js"
-  }
-}
