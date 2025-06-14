@@ -3,6 +3,8 @@ import { ref, onMounted } from 'vue'
 import type { PropType } from 'vue'
 import type { Asset } from '@/types/asset'
 import { assetApi } from '@/services/api'
+import { formatDate } from '@/utils/dateFormatter'
+import Alert from '@/components/common/Alert.vue'
 
 const emit = defineEmits(['save', 'cancel'])
 
@@ -23,6 +25,25 @@ const props = defineProps({
 
 const errorMessage = ref<string | null>(null)
 const isSubmitting = ref(false)
+const showPassword = ref(false)
+
+const alert = ref({
+  show: false,
+  type: 'success',
+  message: ''
+})
+
+const showAlert = (type: 'success' | 'error', message: string) => {
+  alert.value = {
+    show: true,
+    type,
+    message
+  }
+  // Auto hide after 3 seconds
+  setTimeout(() => {
+    alert.value.show = false
+  }, 3000)
+}
 
 const isFieldDisabled = (fieldName: string) => {
   return props.mode === 'edit' && !props.editableFields.includes(fieldName)
@@ -76,8 +97,32 @@ const assetForm = ref<Partial<Asset>>({
   remarks: ''
 })
 
+const formatDateToWords = (dateString: string | null | undefined): string => {
+  if (!dateString) return ''
+  return formatDate(dateString)
+}
+
+// Add this helper function
+const formatDateForInput = (dateString: string | null | undefined): string => {
+  if (!dateString) return ''
+  try {
+    const date = new Date(dateString)
+    return date.toISOString().split('T')[0]
+  } catch {
+    return ''
+  }
+}
+
 onMounted(() => {
-  if (props.asset) {
+  if (props.asset && props.mode === 'edit') {
+    const formattedAsset = {
+      ...props.asset,
+      date_issued: formatDateForInput(props.asset.date_issued),
+      warranty_expiration: formatDateForInput(props.asset.warranty_expiration),
+      remarks_date: formatDateToWords(props.asset.remarks_date)
+    }
+    Object.assign(assetForm.value, formattedAsset)
+  } else if (props.asset) {
     Object.assign(assetForm.value, props.asset)
   }
 })
@@ -182,15 +227,48 @@ const handleCreate = async () => {
     const result = await response.json()
     emit('save', result.item)
     resetForm()
-    alert('Asset created successfully')
-
+    showAlert('success', 'Asset created successfully')
+   
   } catch (error) {
     console.error('Form creation error:', error)
-    errorMessage.value = 'The serial number already exists in the system.' 
+    showAlert('error', error instanceof Error ? error.message : 'Failed to create asset')
+    errorMessage.value = 'The serial number already exists in the system.'
   } finally {
     isSubmitting.value = false
   }
 }
+
+// Add these helper functions at the top of the script section
+const parseDate = (dateString: string | null | undefined): string => {
+  if (!dateString) return ''
+  
+  try {
+    // First try parsing as ISO date
+    if (dateString.includes('T')) {
+      return dateString
+    }
+    
+    // Parse formatted date string (e.g. "June 14, 2025")
+    const parts = dateString.split(',')
+    if (parts.length === 2) {
+      const date = new Date(dateString)
+      if (!isNaN(date.getTime())) {
+        return date.toISOString()
+      }
+    }
+    
+    // If it's a simple date string (YYYY-MM-DD)
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return new Date(dateString).toISOString()
+    }
+    
+    return dateString
+  } catch (error) {
+    console.error('Date parsing error:', error)
+    return dateString
+  }
+}
+
 
 const handleUpdate = async () => {
   if (isSubmitting.value) return
@@ -216,12 +294,20 @@ const handleUpdate = async () => {
       ...assetForm.value,
       unit_value: Number(assetForm.value.unit_value) || 0,
       qty: Number(assetForm.value.qty) || 1,
-      total_value: Number(assetForm.value.total_value) || 0,
-      date_issued: assetForm.value.date_issued || null,
-      warranty_expiration: assetForm.value.warranty_expiration || null,
-      status: assetForm.value.status || 'Active',
-      condition_status: assetForm.value.condition_status || 'New'
+      total_value: Number(assetForm.value.total_value) || 0
     }
+
+    // Only process dates if they exist
+    if (formData.date_issued) {
+      formData.date_issued = parseDate(formData.date_issued)
+    }
+    if (formData.warranty_expiration) {
+      formData.warranty_expiration = parseDate(formData.warranty_expiration)
+    }
+    if (formData.remarks_date) {
+      formData.remarks_date = parseDate(formData.remarks_date)
+    }
+
 
     const response = await fetch(`/api/inventory/${props.asset.id}`, {
       method: 'PUT',
@@ -243,11 +329,16 @@ const handleUpdate = async () => {
 
     const result = await response.json()
     emit('save', result.item)
-    alert('Asset updated successfully')
-
+    showAlert('success', 'Asset updated successfully')
+   
   } catch (error) {
     console.error('Form update error:', error)
-    errorMessage.value = 'The serial number already exists in the system.'
+    showAlert('error', error instanceof Error ? error.message : 'Update failed')
+    if (error instanceof Error && error.message.includes('serial number')) {
+      showAlert('error', 'This serial number already exists in the system. Please use a different serial number.')
+    } else {
+      showAlert('error', 'Failed to update asset. Please try again.')
+    }
   } finally {
     isSubmitting.value = false
   }
@@ -288,6 +379,13 @@ const resetForm = () => {
 
 <template>
   <div class="bg-white p-6 rounded-lg shadow">
+    <Alert 
+      :show="alert.show"
+      :type="alert.type as 'success' | 'error'"
+      :message="alert.message"
+      @close="alert.show = false"
+    />
+   
     <form @submit.prevent class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- Basic Information -->
       <div class="col-span-2 space-y-4">
@@ -362,18 +460,58 @@ const resetForm = () => {
         </select>
         </div>
 
-        <div>
+        <div class="form-group">
           <label class="block text-sm font-medium text-gray-700">Password</label>
-          <input v-model="assetForm.password" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+          <div class="relative">
+            <input
+              v-model="assetForm.password"
+              :type="showPassword ? 'text' : 'password'"
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            />
+            <button
+              type="button"
+              class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 hover:text-gray-800"
+              @click="showPassword = !showPassword"
+            >
+              <svg 
+                class="h-5 w-5" 
+                :class="showPassword ? 'hidden' : 'block'"
+                xmlns="http://www.w3.org/2000/svg" 
+                viewBox="0 0 20 20" 
+                fill="currentColor"
+              >
+                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+              </svg>
+              <svg 
+                class="h-5 w-5" 
+                :class="showPassword ? 'block' : 'hidden'"
+                xmlns="http://www.w3.org/2000/svg" 
+                viewBox="0 0 20 20" 
+                fill="currentColor"
+              >
+                <path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd" />
+                <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div>
           <label class="block text-sm font-medium text-gray-700">Date Issued</label>
-          <input v-model="assetForm.date_issued" type="date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+          <input 
+            v-model="assetForm.date_issued" 
+            type="date" 
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" 
+          />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Warranty Expiration</label>
-          <input v-model="assetForm.warranty_expiration" type="date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+          <input 
+            v-model="assetForm.warranty_expiration" 
+            type="date" 
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" 
+          />
         </div>
 
         <div>

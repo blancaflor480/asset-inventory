@@ -11,7 +11,7 @@ onMounted(() => {
 })
 
 const menuItems = [
-  { name: 'Dashboard', path: '/dashboard', icon: 'dashboard', roles: ['Superadmin'] },
+  { name: 'Dashboard', path: '/dashboard', icon: 'dashboard'},
   { name: 'Inventory', path: '/inventory', icon: 'inventory_2' },
   { name: 'Accounts', path: '/accounts', icon: 'people', roles: ['Superadmin'] }
 ]

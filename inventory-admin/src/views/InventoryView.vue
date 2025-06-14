@@ -5,6 +5,9 @@ import AssetForm from '@/components/inventory/AssetForm.vue';
 import AssetFilters from '@/components/inventory/AssetFilters.vue';
 import type { Asset } from '@/types/asset';
 import { assetApi } from '@/services/api';
+import AlertModal from '@/components/common/AlertModal.vue'
+import ConfirmDeleteModal from '@/components/common/ConfirmDeleteModal.vue'
+
 
 const store = useInventoryStore();
 const showForm = ref(false);
@@ -56,56 +59,125 @@ const handleEditAsset = (asset: Asset) => {
   selectedAsset.value = asset;
   showEditModal.value = true;
 };
+const alertModal = ref({
+  show: false,
+  type: 'success' as 'success' | 'error',
+  title: '',
+  message: ''
+})
 
-const handleDeleteAsset = async (asset: Asset) => {
-  if (!asset.id) return;
-  
-  if (confirm('Are you sure you want to delete this asset?')) {
-    try {
-      await assetApi.delete(asset.id.toString());
-      store.fetchItems();
-    } catch (error) {
-      console.error('Error deleting asset:', error);
-      alert('Failed to delete asset');
-    }
+const deleteModal = ref({
+  show: false,
+  assetToDelete: null as Asset | null
+})
+
+const confirmDelete = (asset: Asset) => {
+  deleteModal.value = {
+    show: true,
+    assetToDelete: asset
   }
-};
+}
 
-const handleUpdateAsset = async (asset: Asset) => {
-  if (!selectedAsset.value?.id) return;
+const handleDeleteAsset = async () => {
+  if (!deleteModal.value.assetToDelete?.id) return
   
   try {
-    await assetApi.update(selectedAsset.value.id.toString(), asset);
-    store.fetchItems();
-    showEditModal.value = false;
+    await assetApi.delete(deleteModal.value.assetToDelete.id.toString())
+    
+    // Remove from store
+    store.removeItem(deleteModal.value.assetToDelete.id)
+    
+    alertModal.value = {
+      show: true,
+      type: 'success',
+      title: 'Asset Deleted',
+      message: 'The asset has been successfully deleted.'
+    }
+    
   } catch (error) {
-    console.error('Error updating asset:', error);
-    alert('Failed to update asset');
+    alertModal.value = {
+      show: true,
+      type: 'error',
+      title: 'Delete Failed',
+      message: error instanceof Error ? error.message : 'Failed to delete asset'
+    }
+  } finally {
+    // Close the confirmation modal
+    deleteModal.value = {
+      show: false,
+      assetToDelete: null
+    }
+  }
+}
+
+
+const handleUpdateAsset = async (asset: Asset) => {
+  try {
+    await assetApi.update(asset.id!.toString(), asset)
+    
+    alertModal.value = {
+      show: true,
+      type: 'success',
+      title: 'Asset Updated',
+      message: 'The asset has been successfully updated.'
+    }
+    
+    await store.fetchItems()
+    showEditModal.value = false
+    
+  } catch (error) {
+    alertModal.value = {
+      show: true,
+      type: 'error',
+      title: 'Update Failed',
+      message: error instanceof Error ? error.message : 'Failed to update asset'
+    }
   }
 };
 
 const handleSaveAsset = async (asset: Partial<Asset>) => {
   try {
-    console.log('Saving asset:', asset)
-    const response = await assetApi.create(asset)
-    console.log('Save response:', response)
+    await assetApi.create(asset)
     
-    // Refresh the inventory list
+    alertModal.value = {
+      show: true,
+      type: 'success',
+      title: 'Asset Created',
+      message: 'The new asset has been successfully created.'
+    }
+    
     await store.fetchItems()
-    
-    // Close the form modal and show success message
     showForm.value = false
-    alert('Asset created successfully!')
     
   } catch (error) {
-    console.error('Error saving asset:', error)
-    alert('Failed to save asset: ' + (error instanceof Error ? error.message : String(error)))
+    alertModal.value = {
+      show: true,
+      type: 'error',
+      title: 'Creation Failed',
+      message: error instanceof Error ? error.message : 'Failed to create asset'
+    }
   }
 };
 </script>
 
 <template>
+
   <div class="py-6">
+    <!-- Alert Modal -->
+    <AlertModal 
+      v-bind="alertModal"
+      @close="alertModal.show = false"
+    />
+    
+    <!-- Confirm Delete Modal -->
+    <ConfirmDeleteModal
+      :show="deleteModal.show"
+      title="Delete Asset"
+      message="Are you sure you want to delete this asset? This action cannot be undone."
+      @confirm="handleDeleteAsset"
+      @cancel="deleteModal.show = false"
+    />
+
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Header -->
       <div class="flex justify-between items-center mb-6">
@@ -173,7 +245,7 @@ const handleSaveAsset = async (asset: Partial<Asset>) => {
                     Edit
                   </button>
                   <button 
-                    @click="handleDeleteAsset(item)"
+                    @click="confirmDelete(item)"
                     class="text-red-600 hover:text-red-900"
                   >
                     Delete

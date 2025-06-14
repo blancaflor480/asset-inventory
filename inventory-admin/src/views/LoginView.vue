@@ -2,17 +2,28 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { API_BASE_URL } from '@/config/api'
 
 const router = useRouter()
 const email = ref('')
 const password = ref('')
 const error = ref('')
+const isLoading = ref(false)
 
 const userStore = useUserStore()
 
 const handleLogin = async () => {
   try {
-    const response = await fetch('http://localhost:3000/api/auth/login', {
+    if (!email.value || !password.value) {
+      error.value = 'Please enter both email and password'
+      return
+    }
+
+    // Show loading state
+    isLoading.value = true
+    error.value = ''
+
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -23,19 +34,25 @@ const handleLogin = async () => {
       })
     })
     
-    const data = await response.json()
-    
-    if (response.ok) {
-      userStore.setUser(data.user)
-      userStore.setToken(data.token)
-      router.push('/dashboard')
-    } else {
-      error.value = data.message || 'Invalid credentials'
-      console.error('Login failed:', data)
+    // Check if response is ok
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('API endpoint not found. Please check server connection.')
+      }
+      const errorData = await response.json()
+      throw new Error(errorData.message || 'Login failed')
     }
+
+    const data = await response.json()
+    userStore.setUser(data.user)
+    userStore.setToken(data.token)
+    router.push('/dashboard')
+
   } catch (err) {
     console.error('Login error:', err)
-    error.value = 'Login failed. Please check your connection and try again.'
+    error.value = err instanceof Error ? err.message : 'Login failed. Please check your connection.'
+  } finally {
+    isLoading.value = false
   }
 }
 </script>

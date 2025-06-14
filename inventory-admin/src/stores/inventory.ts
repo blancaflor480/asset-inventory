@@ -54,6 +54,23 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   };
 
+  const addItem = (item: Asset) => {
+    items.value = [item, ...items.value]
+    totalItems.value++
+  }
+
+  const removeItem = (id: number) => {
+    items.value = items.value.filter(item => item.id !== id)
+    totalItems.value--
+  }
+
+  const updateItem = (updatedItem: Asset) => {
+    const index = items.value.findIndex(item => item.id === updatedItem.id)
+    if (index !== -1) {
+      items.value[index] = updatedItem
+    }
+  }
+
   return {
     items,
     loading,
@@ -65,6 +82,9 @@ export const useInventoryStore = defineStore('inventory', () => {
     filters,
     sortBy,
     sortOrder,
-    fetchItems
+    fetchItems,
+    addItem,
+    removeItem,
+    updateItem
   };
 });

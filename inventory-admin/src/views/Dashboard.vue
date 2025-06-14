@@ -6,6 +6,7 @@ import { Chart as ChartJS, ArcElement, CategoryScale, LinearScale, BarElement, T
 import { Pie, Bar } from 'vue-chartjs';
 import { useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
+import { API_BASE_URL } from '@/config/api'
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -62,7 +63,7 @@ function calculatePercentage(current: number, type: string): number {
 
 const handleUpdateAccount = async (data: any) => {
   try {
-    const response = await fetch(`http://localhost:3000/api/accounts/${currentUser.value.id}`, {
+    const response = await fetch(`${API_BASE_URL}/accounts/${currentUser.value.id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
