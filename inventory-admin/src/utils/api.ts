@@ -1,12 +1,12 @@
-import axios from 'axios';
-import { API_BASE_URL } from '@/config/api';
+import axios from 'axios'
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_URL || 'https://server-ue4m.onrender.com/api',
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
   }
-});
+})
 
 // Add auth token to requests
 api.interceptors.request.use((config) => {
@@ -22,11 +22,13 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   response => response,
   error => {
-    if (error.response?.status === 404) {
-      console.error('API endpoint not found:', error.config.url);
-    }
-    return Promise.reject(error);
+    console.error('API Error:', {
+      url: error.config?.url,
+      status: error.response?.status,
+      message: error.message
+    })
+    return Promise.reject(error)
   }
-);
+)
 
-export default api;
+export default api

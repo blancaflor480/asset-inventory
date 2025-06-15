@@ -206,7 +206,7 @@ const handleCreate = async () => {
       condition_status: assetForm.value.condition_status || 'New'
     }
 
-    const response = await fetch('/api/inventory', {
+    const response = await fetch('https://server-ue4m.onrender.com/api/inventory', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -309,7 +309,7 @@ const handleUpdate = async () => {
     }
 
 
-    const response = await fetch(`/api/inventory/${props.asset.id}`, {
+    const response = await fetch(`https://server-ue4m.onrender.com/api/inventory/${props.asset.id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
