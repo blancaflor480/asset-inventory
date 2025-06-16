@@ -13,6 +13,7 @@ const isLoading = ref(false)
 const userStore = useUserStore()
 
 const handleLogin = async () => {
+  
   try {
     if (!email.value || !password.value) {
       error.value = 'Please enter both email and password'
@@ -101,13 +102,21 @@ const handleLogin = async () => {
         <div>
           <button
             type="submit"
+            :disabled="isLoading"
             class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
           >
-            Sign in
+            <span v-if="isLoading" class="flex items-center">
+              <svg class="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+              </svg>
+              Signing in...
+            </span>
+            <span v-else>
+              Sign in
+            </span>
           </button>
         </div>
-        
-
       </form>
     </div>
   </div>
