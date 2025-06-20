@@ -372,3 +372,22 @@ export const validateSerialNo = async (req: Request, res: Response): Promise<voi
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const listEmployees = async (req: { query: { search?: string; sortBy?: "assignee"; sortOrder?: "ASC" | "DESC"; }; }, res: { json: (arg0: any) => void; }) => {
+  const { search = '', sortBy = 'assignee', sortOrder = 'ASC' } = req.query;
+  const conn = await connection;
+  let where = '';
+  let params = [];
+  if (search) {
+    where = 'WHERE assignee LIKE ?';
+    params.push(`%${search}%`);
+  }
+  const allowedSort = ['assignee', 'count'];
+  const order = allowedSort.includes(sortBy) ? sortBy : 'assignee';
+  const orderDir = sortOrder === 'DESC' ? 'DESC' : 'ASC';
+  const [rows] = await conn.execute(
+    `SELECT assignee, COUNT(*) as count FROM inventory_items ${where} GROUP BY assignee ORDER BY ${order} ${orderDir}`,
+    params
+  );
+  res.json(rows);
+};

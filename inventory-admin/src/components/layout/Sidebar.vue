@@ -13,7 +13,8 @@ onMounted(() => {
 const menuItems = [
   { name: 'Dashboard', path: '/dashboard', icon: 'dashboard'},
   { name: 'Inventory', path: '/inventory', icon: 'inventory_2' },
-  { name: 'Accounts', path: '/accounts', icon: 'people', roles: ['Superadmin'] }
+  { name: 'Accounts', path: '/accounts', icon: 'people', roles: ['Superadmin'] },
+  { name: 'Employees', path: '/employees', icon: 'people' }
 ]
 
 const filteredMenuItems = computed(() => {
