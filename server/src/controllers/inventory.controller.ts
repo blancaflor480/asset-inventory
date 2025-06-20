@@ -373,21 +373,54 @@ export const validateSerialNo = async (req: Request, res: Response): Promise<voi
   }
 };
 
-export const listEmployees = async (req: { query: { search?: string; sortBy?: "assignee"; sortOrder?: "ASC" | "DESC"; }; }, res: { json: (arg0: any) => void; }) => {
-  const { search = '', sortBy = 'assignee', sortOrder = 'ASC' } = req.query;
-  const conn = await connection;
-  let where = '';
-  let params = [];
-  if (search) {
-    where = 'WHERE assignee LIKE ?';
-    params.push(`%${search}%`);
+export const listEmployees = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { search = '', sortBy = 'assignee', sortOrder = 'ASC' } = req.query;
+    
+    const conn = await connection;
+    let whereClause = 'WHERE assignee IS NOT NULL AND assignee != ""';
+    let params: any[] = [];
+    
+    // Add search condition
+    if (search) {
+      whereClause += ' AND assignee LIKE ?';
+      params.push(`%${search}%`);
+    }
+    
+    // Validate sort parameters
+    const allowedSortFields = ['assignee', 'count'];
+    const validSortBy = allowedSortFields.includes(sortBy as string) ? sortBy : 'assignee';
+    const validSortOrder = (sortOrder as string)?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+    
+    // Build query based on sort field
+    let orderByClause = '';
+    if (validSortBy === 'count') {
+      orderByClause = `ORDER BY count ${validSortOrder}, assignee ASC`;
+    } else {
+      orderByClause = `ORDER BY assignee ${validSortOrder}`;
+    }
+    
+    const query = `
+      SELECT 
+        assignee, 
+        COUNT(*) as count 
+      FROM inventory_items 
+      ${whereClause} 
+      GROUP BY assignee 
+      HAVING assignee IS NOT NULL 
+      ${orderByClause}
+    `;
+    
+    const [rows] = await conn.execute(query, params) as [any[], any];
+    
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching employees:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch employees',
+      error: process.env.NODE_ENV === 'development' ? 
+        (error instanceof Error ? error.message : String(error)) : 
+        undefined
+    });
   }
-  const allowedSort = ['assignee', 'count'];
-  const order = allowedSort.includes(sortBy) ? sortBy : 'assignee';
-  const orderDir = sortOrder === 'DESC' ? 'DESC' : 'ASC';
-  const [rows] = await conn.execute(
-    `SELECT assignee, COUNT(*) as count FROM inventory_items ${where} GROUP BY assignee ORDER BY ${order} ${orderDir}`,
-    params
-  );
-  res.json(rows);
 };

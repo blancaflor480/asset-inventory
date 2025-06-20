@@ -20,6 +20,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/accounts', accountRoutes); // Add this line
 
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
