@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { assetApi } from '@/services/api'
+//import { inventoryemployeeapi } from '@/services/api'
 import type { Asset } from '@/types/asset'
 import axios from 'axios'
 
@@ -18,8 +18,8 @@ const fetchEmployees = async () => {
   try {
     loading.value = true
     error.value = ''
-    
-    const res = await axios.get('/api/employees', {
+    // Removed invalid newAccount reference
+    const res = await axios.get('https://server-ue4m.onrender.com/api/employees', {
       params: {
         search: search.value,
         sortBy: sortBy.value,
@@ -43,7 +43,7 @@ const fetchAssetsByAssignee = async (assignee: string) => {
     error.value = ''
     
     // Use a dedicated endpoint for fetching assets by assignee
-    const res = await axios.get(`/api/inventory/assignee/${encodeURIComponent(assignee)}`);
+    const res = await axios.get(`https://server-ue4m.onrender.com/api/inventory/assignee/${encodeURIComponent(assignee)}`);
     
     assets.value = Array.isArray(res.data) ? res.data : [];
     
