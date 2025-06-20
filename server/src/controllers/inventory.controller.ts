@@ -424,3 +424,34 @@ export const listEmployees = async (req: Request, res: Response): Promise<void> 
     });
   }
 };
+
+export const getAssetsByAssignee = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { assignee } = req.params;
+    
+    if (!assignee) {
+      res.status(400).json({ message: 'Assignee parameter is required' });
+      return;
+    }
+
+    const conn = await connection;
+    
+    const query = `
+      SELECT * FROM inventory_items 
+      WHERE assignee = ? 
+      ORDER BY tag_id ASC
+    `;
+    
+    const [assets] = await conn.execute(query, [assignee]) as [any[], any];
+    
+    res.json(assets);
+  } catch (error) {
+    console.error('Error fetching assets by assignee:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch assets for assignee',
+      error: process.env.NODE_ENV === 'development' ? 
+        (error instanceof Error ? error.message : String(error)) : 
+        undefined
+    });
+  }
+};

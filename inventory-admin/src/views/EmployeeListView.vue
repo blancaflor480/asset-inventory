@@ -19,7 +19,6 @@ const fetchEmployees = async () => {
     loading.value = true
     error.value = ''
     
-    // Make sure to use the correct API endpoint
     const res = await axios.get('/api/employees', {
       params: {
         search: search.value,
@@ -41,17 +40,12 @@ const fetchEmployees = async () => {
 const fetchAssetsByAssignee = async (assignee: string) => {
   try {
     loading.value = true
+    error.value = ''
     
-    // Fetch assets specifically for this assignee
-    const res = await assetApi.getAll({
-      page: 1,
-      limit: 1000,
-      search: assignee // This will search in assignee field
-    });
+    // Use a dedicated endpoint for fetching assets by assignee
+    const res = await axios.get(`/api/inventory/assignee/${encodeURIComponent(assignee)}`);
     
-    // Filter assets to only show those belonging to the selected assignee
-    const allAssets = res?.data?.items && Array.isArray(res.data.items) ? res.data.items : [];
-    assets.value = allAssets.filter((asset: { assignee: string }) => asset.assignee === assignee);
+    assets.value = Array.isArray(res.data) ? res.data : [];
     
   } catch (err) {
     console.error('fetchAssetsByAssignee error:', err);
@@ -73,6 +67,13 @@ const closeModal = () => {
   selectedAssignee.value = null
   assets.value = []
 }
+
+// Computed property to show total value of assets for selected assignee
+const totalAssetsValue = computed(() => {
+  return assets.value.reduce((total, asset) => {
+    return total + (asset.total_value || 0)
+  }, 0)
+})
 
 onMounted(fetchEmployees)
 watch([search, sortBy, sortOrder], fetchEmployees);
@@ -166,12 +167,18 @@ watch([search, sortBy, sortOrder], fetchEmployees);
 
     <!-- View Modal -->
     <div v-if="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
+      <div class="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden">
         <!-- Modal Header -->
         <div class="flex items-center justify-between p-6 border-b">
-          <h2 class="text-xl font-semibold text-gray-900">
-            Assets assigned to: {{ selectedAssignee }}
-          </h2>
+          <div>
+            <h2 class="text-xl font-semibold text-gray-900">
+              Assets assigned to: {{ selectedAssignee }}
+            </h2>
+            <p class="text-sm text-gray-600 mt-1">
+              Total Assets: {{ assets.length }} | 
+              Total Value: ₱{{ totalAssetsValue.toLocaleString() }}
+            </p>
+          </div>
           <button 
             @click="closeModal"
             class="text-gray-400 hover:text-gray-600 focus:outline-none"
@@ -183,7 +190,7 @@ watch([search, sortBy, sortOrder], fetchEmployees);
         </div>
 
         <!-- Modal Body -->
-        <div class="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+        <div class="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
           <!-- Loading State for Assets -->
           <div v-if="loading" class="text-center py-8">
             <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -196,93 +203,123 @@ watch([search, sortBy, sortOrder], fetchEmployees);
           </div>
 
           <!-- Assets List -->
-          <div v-else class="space-y-6">
+          <div v-else class="space-y-4">
             <div 
               v-for="asset in assets" 
               :key="asset.id" 
-              class="bg-gray-50 rounded-lg p-4 border"
+              class="bg-gray-50 rounded-lg p-4 border hover:bg-gray-100 transition-colors"
             >
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Row 1: Primary Info -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Tag ID</label>
-                  <input 
-                    :value="asset.tag_id" 
-                    class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm" 
-                    readonly 
-                  />
+                  <label class="block text-xs font-medium text-gray-700 mb-1">MLCA Tag ID</label>
+                  <div class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-mono">
+                    {{ asset.tag_id }}
+                  </div>
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                  <input 
-                    :value="asset.category" 
-                    class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm" 
-                    readonly 
-                  />
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Category</label>
+                  <div class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm">
+                    {{ asset.category || 'N/A' }}
+                  </div>
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <input 
-                    :value="asset.status" 
-                    class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm" 
-                    readonly 
-                  />
-                </div>
-                <div class="md:col-span-2 lg:col-span-3">
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                  <textarea 
-                    :value="asset.sn_description" 
-                    class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm" 
-                    rows="2"
-                    readonly 
-                  ></textarea>
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Status</label>
+                  <div class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm">
+                    <span :class="{
+                      'text-green-600': asset.status === 'Active',
+                      'text-red-600': asset.status === 'Inactive',
+                      'text-yellow-600': asset.status === 'Maintenance'
+                    }">
+                      {{ asset.status || 'N/A' }}
+                    </span>
+                  </div>
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                  <input 
-                    :value="asset.dept_area" 
-                    class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm" 
-                    readonly 
-                  />
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Condition</label>
+                  <div class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm">
+                    {{ asset.condition_status || 'N/A' }}
+                  </div>
+                </div>
+
+                <!-- Row 2: Description (Full Width) -->
+                <div class="md:col-span-2 lg:col-span-4">
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Description</label>
+                  <div class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm min-h-[2.5rem]">
+                    {{ asset.sn_description || 'No description available' }}
+                  </div>
+                </div>
+
+                <!-- Row 3: Technical Details -->
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Model No.</label>
+                  <div class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-mono">
+                    {{ asset.model_no || 'N/A' }}
+                  </div>
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Condition</label>
-                  <input 
-                    :value="asset.condition_status" 
-                    class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm" 
-                    readonly 
-                  />
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Serial No.</label>
+                  <div class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-mono">
+                    {{ asset.serial_no || 'N/A' }}
+                  </div>
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Model No.</label>
-                  <input 
-                    :value="asset.model_no" 
-                    class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm" 
-                    readonly 
-                  />
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Department</label>
+                  <div class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm">
+                    {{ asset.dept_area || 'N/A' }}
+                  </div>
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Serial No.</label>
-                  <input 
-                    :value="asset.serial_no" 
-                    class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm" 
-                    readonly 
-                  />
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Office</label>
+                  <div class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm">
+                    {{ asset.office || 'N/A' }}
+                  </div>
+                </div>
+
+                <!-- Row 4: Financial Info -->
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Unit Value</label>
+                  <div class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium">
+                    {{ asset.unit_value ? `₱${asset.unit_value.toLocaleString()}` : 'N/A' }}
+                  </div>
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Unit Value</label>
-                  <input 
-                    :value="asset.unit_value ? `₱${asset.unit_value.toLocaleString()}` : ''" 
-                    class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm" 
-                    readonly 
-                  />
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Quantity</label>
+                  <div class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm">
+                    {{ asset.qty || '1' }}
+                  </div>
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-                  <input 
-                    :value="asset.qty" 
-                    class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm" 
-                    readonly 
-                  />
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Total Value</label>
+                  <div class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-green-600">
+                    {{ asset.total_value ? `₱${asset.total_value.toLocaleString()}` : 'N/A' }}
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Supplier</label>
+                  <div class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm">
+                    {{ asset.supplier || 'N/A' }}
+                  </div>
+                </div>
+
+                <!-- Row 5: Dates -->
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Date Issued</label>
+                  <div class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm">
+                    {{ asset.date_issued ? new Date(asset.date_issued).toLocaleDateString() : 'N/A' }}
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Warranty Expiration</label>
+                  <div class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm">
+                    {{ asset.warranty_expiration ? new Date(asset.warranty_expiration).toLocaleDateString() : 'N/A' }}
+                  </div>
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Remarks</label>
+                  <div class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm min-h-[2.5rem]">
+                    {{ asset.remarks || 'No remarks' }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -290,10 +327,14 @@ watch([search, sortBy, sortOrder], fetchEmployees);
         </div>
 
         <!-- Modal Footer -->
-        <div class="flex justify-end p-6 border-t">
+        <div class="flex justify-between items-center p-6 border-t bg-gray-50">
+          <div class="text-sm text-gray-600">
+            Showing {{ assets.length }} asset{{ assets.length !== 1 ? 's' : '' }} 
+            for {{ selectedAssignee }}
+          </div>
           <button 
             @click="closeModal"
-            class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+            class="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
           >
             Close
           </button>
@@ -305,10 +346,48 @@ watch([search, sortBy, sortOrder], fetchEmployees);
 
 <style scoped>
 .input {
-  @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500;
+  width: 100%;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-width: 1px;
+  border-color: #d1d5db;
+  border-radius: 0.375rem;
+  outline: none;
+}
+
+.input:focus {
+  box-shadow: 0 0 0 2px #3b82f6;
+  border-color: #3b82f6;
 }
 
 .btn-primary {
-  @apply inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
+  display: inline-flex;
+  align-items: center;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-width: 1px;
+  border-color: transparent;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  color: #fff;
+  background-color: #2563eb;
+  outline: none;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: #1d4ed8;
+}
+
+.btn-primary:focus {
+  box-shadow: 0 0 0 2px #3b82f6;
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 </style>
