@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/auth';
 import inventoryRoutes from './routes/inventory';
 import accountRoutes from './routes/account';
+import employeeRoutes from './routes/inventory.routes';
 
 
 dotenv.config();
@@ -19,6 +20,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/accounts', accountRoutes); // Add this line
+app.use('/api', employeeRoutes);
 
 
 app.listen(PORT, () => {

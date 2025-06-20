@@ -5,7 +5,8 @@ import {
   updateInventoryItem,
   deleteInventoryItem,
   validateModelNo,
-  validateSerialNo
+  validateSerialNo,
+  listEmployees
 } from '../controllers/inventory.controller';
 import { authenticateToken } from '../middleware/auth';
 
@@ -17,5 +18,7 @@ router.put('/:id', authenticateToken, updateInventoryItem);
 router.delete('/:id', authenticateToken, deleteInventoryItem);
 router.get('/validate/model-no/:modelNo', authenticateToken, validateModelNo);
 router.get('/validate/serial-no/:serialNo', authenticateToken, validateSerialNo);
+
+router.get('/employees', listEmployees);
 
 export default router;
