@@ -1,4 +1,4 @@
-export interface Asset {
+export interface Bookings {
 id?: number;
 room_name: string;
 booked_by: string;
