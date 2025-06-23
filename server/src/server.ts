@@ -22,7 +22,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/accounts', accountRoutes); // Add this line
 app.use('/api', employeeRoutes);
-app.use('/', schedulerRoutes);
+app.use('/api/scheduler', schedulerRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
