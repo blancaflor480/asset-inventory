@@ -5,7 +5,8 @@ import authRoutes from './routes/auth';
 import inventoryRoutes from './routes/inventory';
 import accountRoutes from './routes/account';
 import employeeRoutes from './routes/inventory.routes';
-
+import schedulerRoutes from './routes/scheduler';
+import { scheduler } from 'timers/promises';
 
 dotenv.config();
 
@@ -21,7 +22,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/accounts', accountRoutes); // Add this line
 app.use('/api', employeeRoutes);
-
+app.use('/api/scheduler', schedulerRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

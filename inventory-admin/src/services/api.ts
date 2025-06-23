@@ -84,3 +84,10 @@ export const assetApi = {
 
   }
 }
+
+export const inventoryemployeeapi = {
+  getAll: async (params: { page: number; limit: number; roleFilter: string; sortOrder: 'ASC' | 'DESC' }) => {
+    const response = await api.get(`${API_BASE_URL}/employees`, { params })
+    return response.data
+  },
+}

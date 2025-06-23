@@ -14,7 +14,9 @@ const menuItems = [
   { name: 'Dashboard', path: '/dashboard', icon: 'dashboard'},
   { name: 'Inventory', path: '/inventory', icon: 'inventory_2' },
   { name: 'Accounts', path: '/accounts', icon: 'people', roles: ['Superadmin'] },
-  { name: 'Employees', path: '/employees', icon: 'people' }
+  { name: 'Employees', path: '/employees', icon: 'people' },
+  { name: 'Scheduler', path: '/scheduler', icon: 'calendar_today' },
+  //{ name: 'Settings', path: '/settings', icon: 'settings', roles: ['Superadmin'] }
 ]
 
 const filteredMenuItems = computed(() => {
