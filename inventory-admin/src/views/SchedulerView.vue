@@ -29,28 +29,28 @@ const rooms = ['Conference Room A', 'Conference Room B']
 const userStore = useUserStore()
 
 const fetchBookings = async () => {
-  const res = await axios.get(`${API_BASE_URL}/bookings`)
+  const res = await axios.get(`${API_BASE_URL}/scheduler/bookings`)
   bookings.value = res.data
 }
 
 const handleAddBooking = async () => {
-  await axios.post(`${API_BASE_URL}/bookings`, newBooking.value)
+  await axios.post(`${API_BASE_URL}/scheduler/bookings`, newBooking.value)
   showModal.value = false
   fetchBookings()
 }
 
 const handleCancelBooking = async (id: number) => {
-  await axios.put(`${API_BASE_URL}/bookings/${id}/cancel`)
+  await axios.put(`${API_BASE_URL}/scheduler/bookings/${id}/cancel`)
   fetchBookings()
 }
 
 const approveBooking = async (id: number) => {
-  await axios.put(`${API_BASE_URL}/bookings/${id}/status`, { status: 'Approved' })
+  await axios.put(`${API_BASE_URL}/scheduler/bookings/${id}/status`, { status: 'Approved' })
   fetchBookings()
 }
 
 const rejectBooking = async (id: number) => {
-  await axios.put(`${API_BASE_URL}/bookings/${id}/status`, { status: 'Rejected' })
+  await axios.put(`${API_BASE_URL}/scheduler/bookings/${id}/status`, { status: 'Rejected' })
   fetchBookings()
 }
 
