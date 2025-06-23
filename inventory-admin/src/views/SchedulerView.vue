@@ -4,6 +4,7 @@ import axios from 'axios'
 import VueCal from 'vue-cal'
 import 'vue-cal/dist/vuecal.css'
 import { useUserStore } from '@/stores/user'
+import { API_BASE_URL } from '@/config/api';
 
 interface Booking {
   id: number
@@ -28,28 +29,28 @@ const rooms = ['Conference Room A', 'Conference Room B']
 const userStore = useUserStore()
 
 const fetchBookings = async () => {
-  const res = await axios.get('/api/conference-rooms')
+  const res = await axios.get(`${API_BASE_URL}/bookings`)
   bookings.value = res.data
 }
 
 const handleAddBooking = async () => {
-  await axios.post('/api/conference-rooms', newBooking.value)
+  await axios.post(`${API_BASE_URL}/bookings`, newBooking.value)
   showModal.value = false
   fetchBookings()
 }
 
 const handleCancelBooking = async (id: number) => {
-  await axios.put(`/api/conference-rooms/${id}/cancel`)
+  await axios.put(`${API_BASE_URL}/bookings/${id}/cancel`)
   fetchBookings()
 }
 
 const approveBooking = async (id: number) => {
-  await axios.put(`/api/conference-rooms/${id}/approve`)
+  await axios.put(`${API_BASE_URL}/bookings/${id}/status`, { status: 'Approved' })
   fetchBookings()
 }
 
 const rejectBooking = async (id: number) => {
-  await axios.put(`/api/conference-rooms/${id}/reject`)
+  await axios.put(`${API_BASE_URL}/bookings/${id}/status`, { status: 'Rejected' })
   fetchBookings()
 }
 
