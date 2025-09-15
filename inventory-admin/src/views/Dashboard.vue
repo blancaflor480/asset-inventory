@@ -233,7 +233,7 @@ const barOptions = {
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <!-- Status Distribution -->
         <div class="bg-white rounded-lg shadow p-6">
-          <h3 class="text-lg font-medium text-gray-900 mb-4">Asset Status Distribution</h3>
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Device Status Distribution</h3>
           <div class="h-64">
             <Pie :data="statusChartData" :options="pieOptions" />
           </div>

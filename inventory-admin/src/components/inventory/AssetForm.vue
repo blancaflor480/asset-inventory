@@ -130,8 +130,7 @@ onMounted(() => {
 const categories = [
   'Mobile Phone',
   'Laptop',
-  'Desktop',
-  'Others'
+  'Desktop'
 ]
 
 const offices = [
@@ -145,9 +144,14 @@ const departments = [
   'Sales',
   'Purchasing',
   'Marketing',
-  'MD',
+  'Sales Manager',
   'Sales Engineer',
-  'Human Resources'
+  'Human Resources',
+  'Accounting',
+  'IT',
+  'Admin',
+  'Finance',
+  'Production'
 ]
 
 const office = [
@@ -157,7 +161,8 @@ const office = [
 
 const statuses = [
   'Active',
-  'In Use',
+  'Inactive',
+  'Available',
   'In Maintenance',
   'Disposed',
   'Lost'

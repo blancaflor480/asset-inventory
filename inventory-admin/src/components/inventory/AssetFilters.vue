@@ -32,7 +32,8 @@ const departments = [
 
 const statuses = [
   'Active',
-  'In Use',
+  'Inactive',
+  'Available',
   'In Maintenance',
   'Disposed',
   'Lost'

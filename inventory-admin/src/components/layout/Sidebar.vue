@@ -15,7 +15,7 @@ const menuItems = [
   { name: 'Inventory', path: '/inventory', icon: 'inventory_2' },
   { name: 'Accounts', path: '/accounts', icon: 'people', roles: ['Superadmin'] },
   { name: 'Employees', path: '/employees', icon: 'people' },
-  { name: 'Scheduler', path: '/scheduler', icon: 'calendar_today' },
+  { name: 'Scheduler', path: '/scheduler', icon: 'calendar_today', hidden: true},
   //{ name: 'Settings', path: '/settings', icon: 'settings', roles: ['Superadmin'] }
 ]
 
